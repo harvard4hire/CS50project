@@ -135,7 +135,7 @@ def add_entry():
         db = get_db()
         db.execute('insert into entries (title, text) values (?, ?)',
                      [request.form['title'], request.form['text']])
-        db.commit()
+        db.commit() == True
         flash('New entry was successfully posted')
         return render_template('show_entries.html')
     
