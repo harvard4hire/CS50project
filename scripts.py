@@ -36,14 +36,6 @@ def init_db():
         with app.open_resource('schema.sql', mode='r') as f:
             db.cursor().executescript(f.read())
         db.commit()
-
-def get_db():
-    """Opens a new database connection if there is none yet for the
-    current application context.
-    """
-    if not hasattr(g, 'sqlite_db'):
-        g.sqlite_db = connect_db()
-    return g.sqlite_db
         
 @app.before_request
 def before_request():
@@ -132,10 +124,10 @@ def add_entry():
     if not session.get('logged_in'):
         abort(401)
     else:
-        db = get_db()
-        db.execute('insert into entries (title, text) values (?, ?)',
+        query = g.db.execute('insert into entries (title, text) values (?, ?)',
                      [request.form['title'], request.form['text']])
-        db.commit() == True
+        if query != 1:
+            return 'no table'
         flash('New entry was successfully posted')
         return render_template('show_entries.html')
     
