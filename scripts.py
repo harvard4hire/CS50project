@@ -10,7 +10,9 @@
 """
 
 ### CINDY ######################################################################
+
 import sqlite3
+
 from contextlib import closing
 
 DATABASE = '/tmp/scripts.db'
@@ -18,6 +20,7 @@ DEBUG = True
 SECRET_KEY = 'development key'
 USERNAME = 'admin'
 PASSWORD = 'default'
+
 
 from flask import *
 app = Flask(__name__)
@@ -27,19 +30,25 @@ app.config.from_envvar('FLASKR_SETTINGS', silent=True)
 
 def connect_db():
     return sqlite3.connect(app.config['DATABASE'])
-
+    
 def init_db():
     with closing(connect_db()) as db:
         with app.open_resource('schema.sql', mode='r') as f:
             db.cursor().executescript(f.read())
         db.commit()
 
-    
+def get_db():
+    """Opens a new database connection if there is none yet for the
+    current application context.
+    """
+    if not hasattr(g, 'sqlite_db'):
+        g.sqlite_db = connect_db()
+    return g.sqlite_db
+        
 @app.before_request
 def before_request():
     g.db = connect_db()
-
-@app.teardown_request
+    
 def teardown_request(exception):
     db = getattr(g, 'db', None)
     if db is not None:
@@ -118,36 +127,37 @@ def newpost(userid=None, jobid=None):
         return render_template('newpost.html')
 """
 
-@app.route('/add', methods=['GET', 'POST'])
+@app.route('/add', methods=['POST'])
 def add_entry():
     if not session.get('logged_in'):
         abort(401)
     else:
-        g.db.execute('insert into entries (title, text) values (?, ?)',
+        db = get_db()
+        db.execute('insert into entries (title, text) values (?, ?)',
                      [request.form['title'], request.form['text']])
-        g.db.commit() == True
+        db.commit()
         flash('New entry was successfully posted')
         return render_template('show_entries.html')
     
+   
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     error = None
     if request.method == 'POST':
         if request.form['email'] != 'admin':
-            error = 'Invalid username or password'
+            return 'Invalid username'
         elif request.form['hash'] != 'default':
-            error = 'Invalid username or password'
+            return 'Invalid password'
         else:
             session['logged_in'] = True
             flash('You are logged in')
             return render_template('show_entries.html')
     else:
         return render_template('login.html', error=error)
-
+    
 @app.route('/')
 def show_entries():
     return render_template('layout.html')
-
 
 @app.route('/logout')
 def logout():
@@ -158,7 +168,7 @@ def logout():
 ###############################################################################
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0')
+    app.run()
     
     
     
