@@ -1,0 +1,16 @@
+{% extends "home.html" %}
+{% block body %}
+<div>
+    <form action="" method="post">
+        <p>First Name: <input type=text name=first>
+        <p>Last Name: <input type=text name=last>
+        <p>Email: <input type=text name=email>
+        <p>Password: <input type=text name=password>
+        <p>Confirmation: <input type=text name=confirmation>
+        <p><input type=submit value=Register>
+    </form>
+</div>
+<div>
+    <a href="{{ url_for('login') }}">Log In</a>
+</div>
+{% endblock %}
